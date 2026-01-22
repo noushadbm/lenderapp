@@ -1,5 +1,13 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Platform,
+} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -11,17 +19,25 @@ type RootStackParamList = {
   Home: undefined;
   AddPerson: undefined;
   AddTransaction: { person: Person };
+  TransactionHistory: { person: Person };
   Settings: undefined;
 };
 
-type AddTransactionScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddTransaction'>;
-type AddTransactionScreenRouteProp = RouteProp<RootStackParamList, 'AddTransaction'>;
+type AddTransactionScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'AddTransaction'
+>;
+type AddTransactionScreenRouteProp = RouteProp<
+  RootStackParamList,
+  'AddTransaction'
+>;
 
 const AddTransactionScreen: React.FC = () => {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'borrow' | 'return'>('borrow');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { addTransaction } = useContext(AppContext);
   const navigation = useNavigation<AddTransactionScreenNavigationProp>();
   const route = useRoute<AddTransactionScreenRouteProp>();
@@ -33,14 +49,22 @@ const AddTransactionScreen: React.FC = () => {
     setDate(currentDate);
   };
 
-  const handleAddTransaction = () => {
+  const handleAddTransaction = async () => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
     }
-    addTransaction(person.id, numAmount, type, date);
-    navigation.goBack();
+
+    setIsLoading(true);
+    try {
+      await addTransaction(person.id, numAmount, type, date);
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add transaction. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -54,7 +78,10 @@ const AddTransactionScreen: React.FC = () => {
         keyboardType="numeric"
       />
       <Text style={styles.label}>Transaction Date:</Text>
-      <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
+      <TouchableOpacity
+        style={styles.dateButton}
+        onPress={() => setShowDatePicker(true)}
+      >
         <Text style={styles.dateText}>{date.toLocaleDateString()}</Text>
       </TouchableOpacity>
       {showDatePicker && (
@@ -71,19 +98,42 @@ const AddTransactionScreen: React.FC = () => {
           style={[styles.typeButton, type === 'borrow' && styles.selectedType]}
           onPress={() => setType('borrow')}
         >
-          <Text style={[styles.typeText, type === 'borrow' && styles.selectedTypeText]}>Borrow</Text>
+          <Text
+            style={[
+              styles.typeText,
+              type === 'borrow' && styles.selectedTypeText,
+            ]}
+          >
+            Borrow
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.typeButton, type === 'return' && styles.selectedType]}
           onPress={() => setType('return')}
         >
-          <Text style={[styles.typeText, type === 'return' && styles.selectedTypeText]}>Return</Text>
+          <Text
+            style={[
+              styles.typeText,
+              type === 'return' && styles.selectedTypeText,
+            ]}
+          >
+            Return
+          </Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={styles.button} onPress={handleAddTransaction}>
-        <Text style={styles.buttonText}>Add Transaction</Text>
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        onPress={handleAddTransaction}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>
+          {isLoading ? 'Adding...' : 'Add Transaction'}
+        </Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity
+        style={styles.cancelButton}
+        onPress={() => navigation.goBack()}
+      >
         <Text style={styles.cancelButtonText}>Cancel</Text>
       </TouchableOpacity>
     </View>
@@ -155,6 +205,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 16,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
   },
   buttonText: {
     color: 'white',

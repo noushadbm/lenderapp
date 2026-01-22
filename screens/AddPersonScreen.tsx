@@ -1,5 +1,12 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppContext } from '../src/AppContext';
@@ -8,22 +15,35 @@ type RootStackParamList = {
   Home: undefined;
   AddPerson: undefined;
   AddTransaction: { person: any };
+  TransactionHistory: { person: any };
   Settings: undefined;
 };
 
-type AddPersonScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'AddPerson'>;
+type AddPersonScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'AddPerson'
+>;
 
 const AddPersonScreen: React.FC = () => {
   const [name, setName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { addPerson } = useContext(AppContext);
   const navigation = useNavigation<AddPersonScreenNavigationProp>();
 
-  const handleAddPerson = () => {
-    if (name.trim()) {
-      addPerson(name.trim());
-      navigation.goBack();
-    } else {
+  const handleAddPerson = async () => {
+    if (!name.trim()) {
       Alert.alert('Error', 'Please enter a name');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await addPerson(name.trim());
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add person. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -36,10 +56,19 @@ const AddPersonScreen: React.FC = () => {
         value={name}
         onChangeText={setName}
       />
-      <TouchableOpacity style={styles.button} onPress={handleAddPerson}>
-        <Text style={styles.buttonText}>Add Person</Text>
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        onPress={handleAddPerson}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>
+          {isLoading ? 'Adding...' : 'Add Person'}
+        </Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity
+        style={styles.cancelButton}
+        onPress={() => navigation.goBack()}
+      >
         <Text style={styles.cancelButtonText}>Cancel</Text>
       </TouchableOpacity>
     </View>
@@ -72,6 +101,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 16,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
   },
   buttonText: {
     color: 'white',

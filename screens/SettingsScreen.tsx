@@ -8,10 +8,14 @@ type RootStackParamList = {
   Home: undefined;
   AddPerson: undefined;
   AddTransaction: { person: any };
+  TransactionHistory: { person: any };
   Settings: undefined;
 };
 
-type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
+type SettingsScreenNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Settings'
+>;
 
 const SettingsScreen: React.FC = () => {
   const { currency, setCurrency } = useContext(AppContext);
@@ -23,28 +27,48 @@ const SettingsScreen: React.FC = () => {
     { key: 'INR', label: 'Indian Rupee', symbol: '₹' },
   ];
 
-  const handleCurrencySelect = (selectedCurrency: Currency) => {
-    setCurrency(selectedCurrency);
-    Alert.alert('Success', `Currency changed to ${currencies.find(c => c.key === selectedCurrency)?.label}`);
+  const handleCurrencySelect = async (selectedCurrency: Currency) => {
+    try {
+      await setCurrency(selectedCurrency);
+      Alert.alert(
+        'Success',
+        `Currency changed to ${
+          currencies.find(c => c.key === selectedCurrency)?.label
+        }`,
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to change currency. Please try again.');
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Settings</Text>
       <Text style={styles.subtitle}>Select Currency</Text>
-      {currencies.map((curr) => (
+      {currencies.map(curr => (
         <TouchableOpacity
           key={curr.key}
-          style={[styles.currencyOption, currency === curr.key && styles.selectedCurrency]}
+          style={[
+            styles.currencyOption,
+            currency === curr.key && styles.selectedCurrency,
+          ]}
           onPress={() => handleCurrencySelect(curr.key)}
         >
-          <Text style={[styles.currencyText, currency === curr.key && styles.selectedCurrencyText]}>
+          <Text
+            style={[
+              styles.currencyText,
+              currency === curr.key && styles.selectedCurrencyText,
+            ]}
+          >
             {curr.symbol} {curr.label}
           </Text>
           {currency === curr.key && <Text style={styles.checkmark}>✓</Text>}
         </TouchableOpacity>
       ))}
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
         <Text style={styles.backButtonText}>Back to Home</Text>
       </TouchableOpacity>
     </View>

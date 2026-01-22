@@ -1,11 +1,12 @@
-import { Currency } from './types';
+import { Currency } from './AppContext';
 
-export const formatCurrency = (amount: number, currency: Currency): string => {
+export const formatCurrency = (amount: number, currency?: Currency): string => {
   const symbols = {
     USD: '$',
     AED: 'د.إ',
     INR: '₹',
   };
 
-  return `${symbols[currency]}${amount.toFixed(2)}`;
+  const currencySymbol = symbols[currency || 'USD'] || '$'; // Default to USD symbol if currency is invalid
+  return `${currencySymbol}${amount.toFixed(2)}`;
 };

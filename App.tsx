@@ -4,7 +4,13 @@
  */
 
 import React from 'react';
-import { StatusBar, StyleSheet, useColorScheme, TouchableOpacity, Text } from 'react-native';
+import {
+  StatusBar,
+  StyleSheet,
+  useColorScheme,
+  TouchableOpacity,
+  Text,
+} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,6 +20,7 @@ import HomeScreen from './screens/HomeScreen';
 import AddPersonScreen from './screens/AddPersonScreen';
 import AddTransactionScreen from './screens/AddTransactionScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import TransactionHistoryScreen from './screens/TransactionHistoryScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,26 +33,43 @@ function App() {
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
         <AppProvider>
           <NavigationContainer>
-          <Stack.Navigator initialRouteName="Home">
-            <Stack.Screen
-              name="Home"
-              component={HomeScreen}
-              options={({ navigation }) => ({
-                title: 'Lender App',
-                headerRight: () => (
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('Settings')}
-                    style={{ marginRight: 16 }}
-                  >
-                    <Text style={{ fontSize: 24 }}>⚙️</Text>
-                  </TouchableOpacity>
-                ),
-              })}
-            />
-            <Stack.Screen name="AddPerson" component={AddPersonScreen} options={{ title: 'Add Person' }} />
-            <Stack.Screen name="AddTransaction" component={AddTransactionScreen} options={{ title: 'Add Transaction' }} />
-            <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
-          </Stack.Navigator>
+            <Stack.Navigator initialRouteName="Home">
+              <Stack.Screen
+                name="Home"
+                component={HomeScreen}
+                options={({ navigation }) => ({
+                  title: 'Lender App',
+                  headerRight: () => (
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('Settings')}
+                      style={{ marginRight: 16 }}
+                    >
+                      <Text style={{ fontSize: 24 }}>⚙️</Text>
+                    </TouchableOpacity>
+                  ),
+                })}
+              />
+              <Stack.Screen
+                name="AddPerson"
+                component={AddPersonScreen}
+                options={{ title: 'Add Person' }}
+              />
+              <Stack.Screen
+                name="AddTransaction"
+                component={AddTransactionScreen}
+                options={{ title: 'Add Transaction' }}
+              />
+              <Stack.Screen
+                name="TransactionHistory"
+                component={TransactionHistoryScreen}
+                options={{ title: 'Transaction History' }}
+              />
+              <Stack.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{ title: 'Settings' }}
+              />
+            </Stack.Navigator>
           </NavigationContainer>
         </AppProvider>
       </SafeAreaProvider>
