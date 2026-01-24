@@ -29,7 +29,8 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const HomeScreen: React.FC = () => {
-  const { persons, currency, isLoading, updatePerson } = useContext(AppContext);
+  const { persons, currency, isLoading, updatePerson, deletePerson } =
+    useContext(AppContext);
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const lastTapRef = useRef<{ [key: string]: number }>({});
 
@@ -39,6 +40,42 @@ const HomeScreen: React.FC = () => {
         ? total + transaction.amount
         : total - transaction.amount;
     }, 0);
+  };
+
+  const handleDeletePerson = (person: Person) => {
+    const borrowedAmount = getBorrowedAmount(person);
+    const amountText =
+      borrowedAmount > 0
+        ? `They currently owe ${formatCurrency(
+            borrowedAmount,
+            person.currency,
+          )}.`
+        : borrowedAmount < 0
+        ? `You are owed ${formatCurrency(
+            Math.abs(borrowedAmount),
+            person.currency,
+          )}.`
+        : 'They have no outstanding balance.';
+
+    Alert.alert(
+      'Delete Person',
+      `Are you sure you want to delete "${person.name}"? ${amountText} This action cannot be undone and will remove all their transaction history.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePerson(person.id);
+              Alert.alert('Success', 'Person deleted successfully');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete person');
+            }
+          },
+        },
+      ],
+    );
   };
 
   const handlePersonPress = (person: Person) => {
@@ -121,15 +158,26 @@ const HomeScreen: React.FC = () => {
         </Text>
         <Text style={styles.tapHint}>Double tap for transaction history</Text>
       </View>
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={e => {
-          e.stopPropagation(); // Prevent triggering parent onPress
-          navigation.navigate('AddTransaction', { person: item });
-        }}
-      >
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={e => {
+            e.stopPropagation(); // Prevent triggering parent onPress
+            navigation.navigate('AddTransaction', { person: item });
+          }}
+        >
+          <Text style={styles.addButtonText}>+</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={e => {
+            e.stopPropagation(); // Prevent triggering parent onPress
+            handleDeletePerson(item);
+          }}
+        >
+          <Text style={styles.deleteButtonText}>×</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
@@ -192,6 +240,10 @@ const styles = StyleSheet.create({
     color: '#999',
     marginTop: 2,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   addButton: {
     width: 40,
     height: 40,
@@ -203,6 +255,21 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: 'white',
     fontSize: 24,
+    fontWeight: 'bold',
+  },
+  deleteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FF3B30',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontSize: 18,
     fontWeight: 'bold',
   },
   addPersonButton: {

@@ -10,6 +10,7 @@ interface AppContextType {
   isLoading: boolean;
   addPerson: (name: string) => Promise<void>;
   updatePerson: (personId: string, name: string) => Promise<void>;
+  deletePerson: (personId: string) => Promise<void>;
   addTransaction: (
     personId: string,
     amount: number,
@@ -27,6 +28,7 @@ export const AppContext = React.createContext<AppContextType>({
   isLoading: true,
   addPerson: async () => {},
   updatePerson: async () => {},
+  deletePerson: async () => {},
   addTransaction: async () => {},
   setCurrency: async () => {},
   updatePersonCurrency: async () => {},
@@ -137,6 +139,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const deletePerson = async (personId: string) => {
+    try {
+      await databaseService.deletePerson(personId);
+      // Remove the person from state
+      setPersons(prev => prev.filter(person => person.id !== personId));
+    } catch (error) {
+      console.error('Failed to delete person:', error);
+      throw error;
+    }
+  };
+
   const refreshData = async () => {
     await loadData();
   };
@@ -149,6 +162,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         isLoading,
         addPerson,
         updatePerson,
+        deletePerson,
         addTransaction,
         setCurrency,
         updatePersonCurrency,
