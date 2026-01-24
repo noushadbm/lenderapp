@@ -7,6 +7,9 @@ import {
   StyleSheet,
   Alert,
   Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
+  ScrollView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -68,83 +71,101 @@ const AddTransactionScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Add Transaction for {person.name}</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter amount"
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="numeric"
-      />
-      <Text style={styles.label}>Transaction Date:</Text>
-      <TouchableOpacity
-        style={styles.dateButton}
-        onPress={() => setShowDatePicker(true)}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.dateText}>{date.toLocaleDateString()}</Text>
-      </TouchableOpacity>
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display="default"
-          onChange={onDateChange}
+        <Text style={styles.title}>Add Transaction for {person.name}</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter amount"
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="numeric"
+          blurOnSubmit={true}
+          returnKeyType="done"
+          onSubmitEditing={Keyboard.dismiss}
         />
-      )}
-      <Text style={styles.label}>Transaction Type:</Text>
-      <View style={styles.typeContainer}>
+        <Text style={styles.label}>Transaction Date:</Text>
         <TouchableOpacity
-          style={[styles.typeButton, type === 'borrow' && styles.selectedType]}
-          onPress={() => setType('borrow')}
+          style={styles.dateButton}
+          onPress={() => setShowDatePicker(true)}
         >
-          <Text
+          <Text style={styles.dateText}>{date.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={onDateChange}
+          />
+        )}
+        <Text style={styles.label}>Transaction Type:</Text>
+        <View style={styles.typeContainer}>
+          <TouchableOpacity
             style={[
-              styles.typeText,
-              type === 'borrow' && styles.selectedTypeText,
+              styles.typeButton,
+              type === 'borrow' && styles.selectedType,
             ]}
+            onPress={() => setType('borrow')}
           >
-            Borrow
+            <Text
+              style={[
+                styles.typeText,
+                type === 'borrow' && styles.selectedTypeText,
+              ]}
+            >
+              Borrow
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.typeButton,
+              type === 'return' && styles.selectedType,
+            ]}
+            onPress={() => setType('return')}
+          >
+            <Text
+              style={[
+                styles.typeText,
+                type === 'return' && styles.selectedTypeText,
+              ]}
+            >
+              Return
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          style={[styles.button, isLoading && styles.buttonDisabled]}
+          onPress={handleAddTransaction}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? 'Adding...' : 'Add Transaction'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.typeButton, type === 'return' && styles.selectedType]}
-          onPress={() => setType('return')}
+          style={styles.cancelButton}
+          onPress={() => navigation.goBack()}
         >
-          <Text
-            style={[
-              styles.typeText,
-              type === 'return' && styles.selectedTypeText,
-            ]}
-          >
-            Return
-          </Text>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
-      </View>
-      <TouchableOpacity
-        style={[styles.button, isLoading && styles.buttonDisabled]}
-        onPress={handleAddTransaction}
-        disabled={isLoading}
-      >
-        <Text style={styles.buttonText}>
-          {isLoading ? 'Adding...' : 'Add Transaction'}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.cancelButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.cancelButtonText}>Cancel</Text>
-      </TouchableOpacity>
-    </View>
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
     justifyContent: 'center',
+    flexGrow: 1,
   },
   title: {
     fontSize: 24,

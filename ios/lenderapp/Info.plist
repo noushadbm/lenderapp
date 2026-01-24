@@ -35,6 +35,10 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>This app needs access to documents folder to export Excel files</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>This app needs access to photo library to save exported files</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

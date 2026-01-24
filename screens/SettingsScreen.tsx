@@ -1,8 +1,18 @@
 import React, { useContext } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppContext, Currency } from '../src/AppContext';
+import * as XLSX from 'xlsx';
+import RNFS from 'react-native-fs';
+import Share from 'react-native-share';
 
 type RootStackParamList = {
   Home: undefined;
@@ -18,8 +28,9 @@ type SettingsScreenNavigationProp = NativeStackNavigationProp<
 >;
 
 const SettingsScreen: React.FC = () => {
-  const { currency, setCurrency } = useContext(AppContext);
+  const { currency, setCurrency, persons } = useContext(AppContext);
   const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const [isExporting, setIsExporting] = React.useState(false);
 
   const currencies: { key: Currency; label: string; symbol: string }[] = [
     { key: 'USD', label: 'US Dollar', symbol: '$' },
@@ -41,9 +52,127 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+  const exportToExcel = async () => {
+    if (persons.length === 0) {
+      Alert.alert('No Data', 'No persons or transactions to export.');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      console.log('Starting export process...');
+
+      // Prepare data for Excel
+      const exportData: any[] = [];
+
+      // Add summary section
+      exportData.push(['Lender App - Transaction Summary']);
+      exportData.push(['Export Date:', new Date().toLocaleDateString()]);
+      exportData.push(['Total Persons:', persons.length]);
+      exportData.push([]);
+
+      // Add persons and their transactions
+      persons.forEach((person, index) => {
+        // Calculate balance
+        const balance = person.transactions.reduce((total, transaction) => {
+          return transaction.type === 'borrow'
+            ? total + transaction.amount
+            : total - transaction.amount;
+        }, 0);
+
+        // Person header
+        exportData.push([`Person ${index + 1}: ${person.name}`]);
+        exportData.push(['Currency:', person.currency]);
+        exportData.push(['Current Balance:', balance]);
+        exportData.push([]);
+
+        if (person.transactions.length > 0) {
+          // Transactions header
+          exportData.push(['Date', 'Type', 'Amount', 'Running Balance']);
+
+          let runningBalance = 0;
+          // Sort transactions by date
+          const sortedTransactions = [...person.transactions].sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+          );
+
+          // Add transactions
+          sortedTransactions.forEach(transaction => {
+            runningBalance =
+              transaction.type === 'borrow'
+                ? runningBalance + transaction.amount
+                : runningBalance - transaction.amount;
+
+            exportData.push([
+              new Date(transaction.date).toLocaleDateString(),
+              transaction.type === 'borrow' ? 'Borrowed' : 'Returned',
+              transaction.amount,
+              runningBalance,
+            ]);
+          });
+        } else {
+          exportData.push(['No transactions found']);
+        }
+
+        exportData.push([]); // Empty row between persons
+      });
+
+      console.log('Data prepared, creating workbook...');
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.aoa_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+
+      // Generate Excel file - use base64 directly
+      const excelBase64 = XLSX.write(wb, {
+        type: 'base64',
+        bookType: 'xlsx',
+      });
+
+      console.log('Excel base64 created, length:', excelBase64.length);
+
+      // Save to temporary file
+      const fileName = `LenderApp_Export_${
+        new Date().toISOString().split('T')[0]
+      }.xlsx`;
+      const filePath = `${RNFS.TemporaryDirectoryPath}/${fileName}`;
+
+      console.log('Writing file to:', filePath);
+
+      await RNFS.writeFile(filePath, excelBase64, 'base64');
+
+      // Verify file was created
+      const fileInfo = await RNFS.stat(filePath);
+      console.log('File created successfully, size:', fileInfo.size);
+
+      // Share the file
+      await Share.open({
+        url: `file://${filePath}`,
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        filename: fileName,
+        title: 'Lender App Export',
+        message: 'Exported transactions and balances from Lender App',
+      });
+
+      Alert.alert('Success', 'Excel file exported successfully!');
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert(
+        'Export Failed',
+        `Failed to export data: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Settings</Text>
+
       <Text style={styles.subtitle}>Select Currency</Text>
       {currencies.map(curr => (
         <TouchableOpacity
@@ -65,6 +194,20 @@ const SettingsScreen: React.FC = () => {
           {currency === curr.key && <Text style={styles.checkmark}>✓</Text>}
         </TouchableOpacity>
       ))}
+
+      <Text style={styles.subtitle}>Data Management</Text>
+      <TouchableOpacity
+        style={styles.exportButton}
+        onPress={exportToExcel}
+        disabled={isExporting}
+      >
+        {isExporting ? (
+          <ActivityIndicator color="white" size="small" />
+        ) : (
+          <Text style={styles.exportButtonText}>📊 Export to Excel</Text>
+        )}
+      </TouchableOpacity>
+
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
@@ -124,6 +267,25 @@ const styles = StyleSheet.create({
   checkmark: {
     fontSize: 20,
     color: '#2196f3',
+    fontWeight: 'bold',
+  },
+  exportButton: {
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginVertical: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  exportButtonText: {
+    color: 'white',
+    fontSize: 18,
     fontWeight: 'bold',
   },
   backButton: {
