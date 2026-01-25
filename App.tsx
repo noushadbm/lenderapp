@@ -21,6 +21,7 @@ import AddPersonScreen from './screens/AddPersonScreen';
 import AddTransactionScreen from './screens/AddTransactionScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import TransactionHistoryScreen from './screens/TransactionHistoryScreen';
+import EditTransactionScreen from './screens/EditTransactionScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -63,6 +64,11 @@ function App() {
                 name="TransactionHistory"
                 component={TransactionHistoryScreen}
                 options={{ title: 'Transaction History' }}
+              />
+              <Stack.Screen
+                name="EditTransaction"
+                component={EditTransactionScreen}
+                options={{ title: 'Edit Transaction' }}
               />
               <Stack.Screen
                 name="Settings"

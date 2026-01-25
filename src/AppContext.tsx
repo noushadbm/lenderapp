@@ -17,6 +17,13 @@ interface AppContextType {
     type: 'borrow' | 'return',
     date?: Date,
   ) => Promise<void>;
+  updateTransaction: (
+    transactionId: string,
+    amount: number,
+    type: 'borrow' | 'return',
+    date: Date,
+  ) => Promise<void>;
+  deleteTransaction: (transactionId: string) => Promise<void>;
   setCurrency: (currency: Currency) => Promise<void>;
   updatePersonCurrency: (personId: string, currency: Currency) => Promise<void>;
   refreshData: () => Promise<void>;
@@ -30,6 +37,8 @@ export const AppContext = React.createContext<AppContextType>({
   updatePerson: async () => {},
   deletePerson: async () => {},
   addTransaction: async () => {},
+  updateTransaction: async () => {},
+  deleteTransaction: async () => {},
   setCurrency: async () => {},
   updatePersonCurrency: async () => {},
   refreshData: async () => {},
@@ -150,6 +159,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const updateTransaction = async (
+    transactionId: string,
+    amount: number,
+    type: 'borrow' | 'return',
+    date: Date,
+  ) => {
+    try {
+      await databaseService.updateTransaction(
+        transactionId,
+        amount,
+        type,
+        date,
+      );
+      // Refresh data to get updated transactions
+      await loadData();
+    } catch (error) {
+      console.error('Failed to update transaction:', error);
+      throw error;
+    }
+  };
+
+  const deleteTransaction = async (transactionId: string) => {
+    try {
+      await databaseService.deleteTransaction(transactionId);
+      // Refresh data to get updated transactions
+      await loadData();
+    } catch (error) {
+      console.error('Failed to delete transaction:', error);
+      throw error;
+    }
+  };
+
   const refreshData = async () => {
     await loadData();
   };
@@ -164,6 +205,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         updatePerson,
         deletePerson,
         addTransaction,
+        updateTransaction,
+        deleteTransaction,
         setCurrency,
         updatePersonCurrency,
         refreshData,

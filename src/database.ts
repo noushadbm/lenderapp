@@ -223,6 +223,22 @@ class DatabaseService {
     return transaction;
   }
 
+  async updateTransaction(
+    transactionId: string,
+    amount: number,
+    type: 'borrow' | 'return',
+    date: Date,
+  ): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    await this.db.executeSql(
+      `UPDATE ${TABLES.TRANSACTIONS} 
+       SET amount = ?, type = ?, date = ? 
+       WHERE id = ?`,
+      [amount, type, date.toISOString(), transactionId],
+    );
+  }
+
   async deleteTransaction(transactionId: string): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 

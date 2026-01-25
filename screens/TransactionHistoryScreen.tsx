@@ -20,6 +20,7 @@ type RootStackParamList = {
   AddTransaction: { person: Person };
   Settings: undefined;
   TransactionHistory: { person: Person };
+  EditTransaction: { transaction: Transaction; personName: string };
 };
 
 type TransactionHistoryScreenNavigationProp = NativeStackNavigationProp<
@@ -100,6 +101,17 @@ const TransactionHistoryScreen: React.FC = () => {
             Balance: {formatCurrency(runningBalance, person.currency)}
           </Text>
         </View>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() =>
+            navigation.navigate('EditTransaction', {
+              transaction: item,
+              personName: person.name,
+            })
+          }
+        >
+          <Text style={styles.editButtonText}>✏️</Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -380,6 +392,18 @@ const styles = StyleSheet.create({
   currencyButtonTextSelected: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  editButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFA500',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  editButtonText: {
+    fontSize: 16,
   },
 });
 

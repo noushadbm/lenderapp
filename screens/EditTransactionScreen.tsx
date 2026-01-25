@@ -16,36 +16,43 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { AppContext } from '../src/AppContext';
-import { Person, Transaction } from '../src/types';
+import { Transaction } from '../src/types';
 
 type RootStackParamList = {
   Home: undefined;
   AddPerson: undefined;
-  AddTransaction: { person: Person };
-  TransactionHistory: { person: Person };
-  Settings: undefined;
+  AddTransaction: { person: any };
+  TransactionHistory: { person: any };
   EditTransaction: { transaction: Transaction; personName: string };
+  Settings: undefined;
 };
 
-type AddTransactionScreenNavigationProp = NativeStackNavigationProp<
+type EditTransactionScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'AddTransaction'
+  'EditTransaction'
 >;
-type AddTransactionScreenRouteProp = RouteProp<
+type EditTransactionScreenRouteProp = RouteProp<
   RootStackParamList,
-  'AddTransaction'
+  'EditTransaction'
 >;
 
-const AddTransactionScreen: React.FC = () => {
+const EditTransactionScreen: React.FC = () => {
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'borrow' | 'return'>('borrow');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { addTransaction } = useContext(AppContext);
-  const navigation = useNavigation<AddTransactionScreenNavigationProp>();
-  const route = useRoute<AddTransactionScreenRouteProp>();
-  const { person } = route.params;
+  const { updateTransaction, deleteTransaction } = useContext(AppContext);
+  const navigation = useNavigation<EditTransactionScreenNavigationProp>();
+  const route = useRoute<EditTransactionScreenRouteProp>();
+  const { transaction, personName } = route.params;
+
+  // Initialize form with existing transaction data
+  React.useEffect(() => {
+    setAmount(transaction.amount.toString());
+    setType(transaction.type);
+    setDate(new Date(transaction.date));
+  }, [transaction]);
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     const currentDate = selectedDate || date;
@@ -53,7 +60,7 @@ const AddTransactionScreen: React.FC = () => {
     setDate(currentDate);
   };
 
-  const handleAddTransaction = async () => {
+  const handleUpdateTransaction = async () => {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
@@ -62,13 +69,43 @@ const AddTransactionScreen: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await addTransaction(person.id, numAmount, type, date);
+      await updateTransaction(transaction.id, numAmount, type, date);
       navigation.goBack();
+      Alert.alert('Success', 'Transaction updated successfully');
     } catch (error) {
-      Alert.alert('Error', 'Failed to add transaction. Please try again.');
+      Alert.alert('Error', 'Failed to update transaction. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteTransaction = () => {
+    Alert.alert(
+      'Delete Transaction',
+      'Are you sure you want to delete this transaction? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await deleteTransaction(transaction.id);
+              navigation.goBack();
+              Alert.alert('Success', 'Transaction deleted successfully');
+            } catch (error) {
+              Alert.alert(
+                'Error',
+                'Failed to delete transaction. Please try again.',
+              );
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -78,7 +115,9 @@ const AddTransactionScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Add Transaction for {person.name}</Text>
+        <Text style={styles.title}>Edit Transaction for {personName}</Text>
+
+        <Text style={styles.label}>Amount:</Text>
         <TextInput
           style={styles.input}
           placeholder="Enter amount"
@@ -89,6 +128,7 @@ const AddTransactionScreen: React.FC = () => {
           returnKeyType="done"
           onSubmitEditing={Keyboard.dismiss}
         />
+
         <Text style={styles.label}>Transaction Date:</Text>
         <TouchableOpacity
           style={styles.dateButton}
@@ -104,6 +144,7 @@ const AddTransactionScreen: React.FC = () => {
             onChange={onDateChange}
           />
         )}
+
         <Text style={styles.label}>Transaction Type:</Text>
         <View style={styles.typeContainer}>
           <TouchableOpacity
@@ -139,15 +180,35 @@ const AddTransactionScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
         </View>
+
         <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleAddTransaction}
+          style={[
+            styles.button,
+            styles.updateButton,
+            isLoading && styles.buttonDisabled,
+          ]}
+          onPress={handleUpdateTransaction}
           disabled={isLoading}
         >
           <Text style={styles.buttonText}>
-            {isLoading ? 'Adding...' : 'Add Transaction'}
+            {isLoading ? 'Updating...' : 'Update Transaction'}
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.deleteButton,
+            isLoading && styles.buttonDisabled,
+          ]}
+          onPress={handleDeleteTransaction}
+          disabled={isLoading}
+        >
+          <Text style={[styles.buttonText, styles.deleteButtonText]}>
+            Delete Transaction
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.cancelButton}
           onPress={() => navigation.goBack()}
@@ -174,6 +235,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 32,
   },
+  label: {
+    fontSize: 18,
+    marginBottom: 8,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -193,10 +258,6 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     color: '#333',
-  },
-  label: {
-    fontSize: 18,
-    marginBottom: 8,
   },
   typeContainer: {
     flexDirection: 'row',
@@ -222,11 +283,16 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   button: {
-    backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 16,
+  },
+  updateButton: {
+    backgroundColor: '#007AFF',
+  },
+  deleteButton: {
+    backgroundColor: '#FF3B30',
   },
   buttonDisabled: {
     backgroundColor: '#ccc',
@@ -235,6 +301,9 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  deleteButtonText: {
+    color: 'white',
   },
   cancelButton: {
     alignItems: 'center',
@@ -245,4 +314,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddTransactionScreen;
+export default EditTransactionScreen;
